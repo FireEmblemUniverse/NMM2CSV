@@ -2,12 +2,11 @@ import nightmare, sys, csv, glob, os
 import tkinter as tk
 from tkinter import filedialog
 
-
 def show_exception_and_exit(exc_type, exc_value, tb):
-    import traceback
-    traceback.print_exception(exc_type, exc_value, tb)
-    input("Press Enter key to exit.")
-    sys.exit(-1)
+  import traceback
+  traceback.print_exception(exc_type, exc_value, tb)
+  input("Press Enter key to exit.")
+  sys.exit(-1)
 
 def getarglength(nmmentry):
   """takes the nmm entry object and returns the appropriate EA marker"""
@@ -99,15 +98,47 @@ def process(inputCSV, index, rom):
     dumpfile.write(') "')
     dumpfile.write(macroOutput + '"\n\n') #e.g. BYTE arg000, WORD arg001, etc
     if tableOffset.strip()[0:6]=="INLINE":
-        if rompath == None:
-            root = tk.Tk()
-            root.withdraw()
-            rompath = filedialog.askopenfilename(filetypes=[("GBA files",".gba"),("All files",".*")],initialdir=os.getcwd(),title="Select ROM to use for repointing")
-        label = tableOffset.replace("INLINE",'').strip()
-        dumpfile.write("#inctext PFinder \"" + rompath + "\" " + hex(originalOffset) + " " + label + "\n\nALIGN 4\n" + label + ":\n")
-        inline = True
+      if rompath == None:
+        root = tk.Tk()
+        root.withdraw()
+        rompath = filedialog.askopenfilename(filetypes=[("GBA files",".gba"),("All files",".*")],initialdir=os.getcwd(),title="Select ROM to use for repointing")
+      label = tableOffset.replace("INLINE",'').strip()
+      
+      # Here we do *not* want to use PFinder
+      # dumpfile.write("#inctext PFinder \"" + rompath + "\" " + hex(originalOffset) + " " + label + "\n\nALIGN 4\n" + label + ":\n")
+      
+      def pointer_iter(romFileName, value):
+        target = value.to_bytes(4, 'little')
+
+        with open(romFileName, 'rb') as rom:
+          offset = 0
+
+          while True:
+            word = rom.read(4)
+
+            if word == b'':
+              break
+            
+            if word == target:
+              yield offset
+            
+            offset += 4
+      
+      dumpfile.write("PUSH\n")
+      
+      for offset in pointer_iter(rompath, originalOffset | 0x8000000):
+        dumpfile.write("ORG ${:X}\n".format(offset))
+        dumpfile.write("POIN {}\n".format(label))
+      
+      dumpfile.write("POP\n")
+      
+      # There, much better :)
+      
+      dumpfile.write("ALIGN 4\n{}:\n".format(label))
+
+      inline = True
     else:
-        dumpfile.write("PUSH\nORG "+tableOffset+"\n")
+      dumpfile.write("PUSH\nORG "+tableOffset+"\n")
     dumpfile.write('\n'.join(outputlines))
     if not inline:
         dumpfile.write("\nPOP")
