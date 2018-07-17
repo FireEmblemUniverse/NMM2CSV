@@ -32,6 +32,26 @@ def addToInstaller(csvList,installername):
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
 
+# cache is a dictionary of pointers to iterable of offsets.
+cache = {}
+
+def pointer_iter(romFileName, value):
+    target = value.to_bytes(4, 'little')
+
+    with open(romFileName, 'rb') as rom:
+        offset = 0
+
+        while True:
+            word = rom.read(4)
+
+            if word == b'':
+                break
+
+            if word == target:
+                yield offset
+
+            offset += 4
+
 def process(inputCSV, index, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
     inputNMM = inputCSV.replace(".csv",".nmm") #assume the same file name for now
@@ -105,24 +125,6 @@ def process(inputCSV, index, rom):
             label = tableOffset.replace("INLINE",'').strip()
 
             # Here we do *not* want to use PFinder
-            # dumpfile.write("#inctext PFinder \"" + rompath + "\" " + hex(originalOffset) + " " + label + "\n\nALIGN 4\n" + label + ":\n")
-
-            def pointer_iter(romFileName, value):
-                target = value.to_bytes(4, 'little')
-
-                with open(romFileName, 'rb') as rom:
-                    offset = 0
-
-                    while True:
-                        word = rom.read(4)
-
-                        if word == b'':
-                            break
-
-                        if word == target:
-                            yield offset
-
-                        offset += 4
 
             dumpfile.write("PUSH\n")
 
