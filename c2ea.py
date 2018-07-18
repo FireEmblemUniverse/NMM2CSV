@@ -32,11 +32,12 @@ def addToInstaller(csvList,installername):
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
 
-def process(inputCSV, index, rom):
+def process(inputCSV, inputNMM, filename, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
     global TABLE_INLINED
-    inputNMM = inputCSV.replace(".csv",".nmm") #assume the same file name for now
-    filename = inputCSV.replace(".csv",".event")
+
+    macroName = "_C2EA_{}".format(os.path.split(os.path.splitext(inputCSV)[0])[1].replace(os.path.sep, "_")).replace(' ', '_')
+
     nmm = nightmare.NightmareTable(inputNMM)
     rompath = rom
     macroArgs = [] #params for macro
@@ -64,7 +65,7 @@ def process(inputCSV, index, rom):
         table = csv.reader(myfile)
         tableOffset = next(table)[0]
         for row in table:
-            outputline = "csvmacro" + '{0:03d}'.format(index) + "("
+            outputline = "{}(".format(macroName)
             items = zip(nmm.columns, row[1:])
             for entry, data in items:
                 thisentry = ''
@@ -93,8 +94,7 @@ def process(inputCSV, index, rom):
 
     with open(filename, 'w') as dumpfile:
         inline = False
-        #dumpfile.write('{\n#define csvmacro(')
-        dumpfile.write("#define csvmacro" + '{0:03d}'.format(index) + "(")
+        dumpfile.write("#define {}(".format(macroName))
         dumpfile.write(','.join(macroArgs)) #turns list into 'arg000,arg001' etc
         dumpfile.write(') "')
         dumpfile.write(macroOutput + '"\n\n') #e.g. BYTE arg000, WORD arg001, etc
@@ -142,7 +142,12 @@ def main():
         rom = None
     csvList = glob.glob(os.getcwd() + '/**/*.csv',recursive=True)
     for index, csvfile in enumerate(csvList):
-        rom = process(csvfile, index, rom)
+        rom = process(
+            csvfile,
+            csvfile.replace(".csv",".nmm"),
+            csvfile.replace(".csv",".event"),
+            rom
+        )
     installername = "Table Installer.event"
     addToInstaller(csvList,installername)
     if TABLE_INLINED:
