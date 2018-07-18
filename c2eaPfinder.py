@@ -21,14 +21,25 @@ def memoize(name = None):
         return g
     return decorator
 
-def writeCache():
-    import pickle
-    with open("./.cache", 'wb') as f:
-        pickle.dump(caches, f, pickle.HIGHEST_PROTOCOL)
+def hash(obj):
+    if type(obj) is dict:
+        sortedDict = sorted(obj)
+        return tuple(map(
+            lambda elem: (elem, hash(obj[elem])),
+            sortedDict)).__hash__()
+        # Use sorted so we get the same order for dicts whose
+        # keys may have been added in other orders
+    if type(obj) is list:
+        return tuple(map(hash, obj)).__hash__()
+    else:
+        return obj.__hash__()
+
 
 cachesLoaded = False
+initialHash = None
 def loadCache():
     global cachesLoaded
+    global initialHash
     if not cachesLoaded:
         import os, pickle
         if os.path.exists("./.cache"):
@@ -38,9 +49,16 @@ def loadCache():
                     if type(caches) != dict: raise Exception
             except Exception:
                 caches = {}
+        initialHash = hash(caches)
         cachesLoaded = True
 
 loadCache()
+
+def writeCache():
+    if initialHash != hash(caches):
+        import pickle
+        with open("./.cache", 'wb') as f:
+            pickle.dump(caches, f, pickle.HIGHEST_PROTOCOL)
 
 def deleteCache():
     for name in caches:
