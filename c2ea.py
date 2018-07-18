@@ -43,25 +43,25 @@ def memoize(f):
     return g
 
 @memoize
+def readRom(romFileName):
+    words = []
+    with open(romFileName, 'rb') as rom:
+        while True:
+            word = rom.read(4)
+            if word == b'':
+                break
+            words.append(word)
+    return words
+
+@memoize
 def pointer_offsets(romFileName, value):
     return tuple(pointer_iter(romFileName, value))
 
 def pointer_iter(romFileName, value):
     target = value.to_bytes(4, 'little')
+    words = readRom(romFileName)
+    return (i<<2 for i,x in enumerate(words) if x==target)
 
-    with open(romFileName, 'rb') as rom:
-        offset = 0
-
-        while True:
-            word = rom.read(4)
-
-            if word == b'':
-                break
-
-            if word == target:
-                yield offset
-
-            offset += 4
 
 def process(inputCSV, index, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
