@@ -39,12 +39,12 @@ def pointerOffsets(romFileName, value):
 
 def pointerIter(romFileName, value):
     words = readRom(romFileName)
-    return (i<<2 for i,x in enumerate(words) if x==target)
+    return (i<<2 for i,x in enumerate(words) if x==value)
 
 def writeCache():
     import pickle
-    with open("./.cache") as f:
-        dump(caches, f, pickle.HIGHEST_PROTOCOL)
+    with open("./.cache", 'wb') as f:
+        pickle.dump(caches, f, pickle.HIGHEST_PROTOCOL)
 
 cachesLoaded = False
 def loadCache():
@@ -52,9 +52,12 @@ def loadCache():
     if not cachesLoaded:
         import os, pickle
         if os.path.exists("./.cache"):
-            with open("./.cache", 'rb') as f:
-                caches = pickle.load(f)
-                if type(caches) != dict: caches = {}
+            try:
+                with open("./.cache", 'rb') as f:
+                    caches = pickle.load(f)
+                    if type(caches) != dict: raise Exception
+            except Exception:
+                caches = {}
         cachesLoaded = True
 
 loadCache()
