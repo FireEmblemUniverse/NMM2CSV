@@ -1,6 +1,4 @@
 import nightmare, sys, csv, glob, os
-import tkinter as tk
-from tkinter import filedialog
 
 def show_exception_and_exit(exc_type, exc_value, tb):
     import traceback
@@ -131,8 +129,10 @@ def process(inputCSV, index, rom):
         dumpfile.write(macroOutput + '"\n\n') #e.g. BYTE arg000, WORD arg001, etc
         if tableOffset.strip()[0:6]=="INLINE":
             if rompath == None:
+                import tkinter as tk
                 root = tk.Tk()
                 root.withdraw()
+                from tkinter import filedialog
                 rompath = filedialog.askopenfilename(filetypes=[("GBA files",".gba"),("All files",".*")],initialdir=os.getcwd(),title="Select ROM to use for repointing")
             label = tableOffset.replace("INLINE",'').strip()
 
