@@ -40,6 +40,7 @@ def memoize(f):
             res = f(*args)
             cache[args] = res
             return res
+    return g
 
 @memoize
 def pointer_offsets(romFileName, value):
