@@ -136,24 +136,78 @@ def process(inputCSV, inputNMM, filename, rom):
 
 def main():
     sys.excepthook = showExceptionAndExit
-    try:
-        rom = sys.argv[1]
-    except IndexError:
-        rom = None
-    csvList = glob.glob(os.getcwd() + '/**/*.csv',recursive=True)
-    for index, csvfile in enumerate(csvList):
-        rom = process(
-            csvfile,
-            csvfile.replace(".csv",".nmm"),
-            csvfile.replace(".csv",".event"),
-            rom
-        )
-    installername = "Table Installer.event"
-    addToInstaller(csvList,installername)
+    
+    doSingleFile = False
+
+    folder    = os.getcwd()
+    installer = "Table Installer.event"
+    
+    rom       = None
+    
+    csvFile   = None
+    nmmFile   = None
+    outFile   = None
+
+    if len(sys.argv) > 1:
+        import argparse
+        
+        parser = argparse.ArgumentParser()
+        
+        # Common arguments
+        parser.add_argument('rom', nargs='?')
+        # parser.add_argument('-nocache') # sounds like no$ xd
+        # parser.add_argument('-clearcache')
+        
+        # Arguments for single CSV processing
+        parser.add_argument('-nmm')
+        parser.add_argument('-csv')
+        parser.add_argument('-out')
+
+        # Arguments for folder processing
+        parser.add_argument('-folder')
+        parser.add_argument('-installer')
+        
+        args = parser.parse_args()
+        
+        rom = args.rom
+        
+        if args.folder != None:
+            folder = args.folder
+            
+        installer = args.installer if args.installer != None else (folder + '/Table Installer.event')
+        
+        if args.csv != None:
+            doSingleFile = True
+            
+            csvFile = args.csv
+            nmmFile = args.nmm if args.nmm != None else csvFile.replace(".csv", ".nmm")
+            outFile = args.out if args.out != None else csvFile.replace(".csv", ".event")
+        
+        elif (args.nmm != None) or (args.out != None):
+            sys.exit("ERROR: -nmm or -out argument specified without -csv, aborting.")
+
+    if doSingleFile:
+        process(csvFile, nmmFile, outFile, rom)
+    
+    else: # not doSingleFile
+        csvList = glob.glob(folder + '/**/*.csv', recursive = True)
+        
+        for index, csvfile in enumerate(csvList):
+            rom = process(
+                csvfile,
+                csvfile.replace(".csv",".nmm"),
+                csvfile.replace(".csv",".event"),
+                rom
+            )
+        
+        installer = "Table Installer.event"
+        addToInstaller(csvList, installer)
+    
     if TABLE_INLINED:
         # If we ran successfully and used pfinder, save the pfinder cache.
         from c2eaPfinder import writeCache
         writeCache()
+    
     input("Press Enter to continue")
 
 if __name__ == '__main__':
