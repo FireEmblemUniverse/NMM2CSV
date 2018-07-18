@@ -141,6 +141,8 @@ def main():
         rom = process(csvfile, index, rom)
     installername = "Table Installer.event"
     addToInstaller(csvList,installername)
+    # If we ran successfully, save the pfinder cache.
+    writeCache()
     input("Press Enter to continue")
 
 if __name__ == '__main__':
