@@ -32,8 +32,20 @@ def addToInstaller(csvList,installername):
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
 
-# cache is a dictionary of pointers to iterable of offsets.
-cache = {}
+
+def memoize(f):
+    cache = {}
+    def g(*args):
+        if args in cache:
+            return cache[args]
+        else:
+            res = f(*args)
+            cache[args] = res
+            return res
+
+@memoize
+def pointer_offsets(romFileName, value):
+    return tuple(pointer_iter(romFileName, value))
 
 def pointer_iter(romFileName, value):
     target = value.to_bytes(4, 'little')
@@ -128,7 +140,7 @@ def process(inputCSV, index, rom):
 
             dumpfile.write("PUSH\n")
 
-            for offset in pointer_iter(rompath, originalOffset | 0x8000000):
+            for offset in pointer_offsets(rompath, originalOffset | 0x8000000):
                 dumpfile.write("ORG ${:X}\n".format(offset))
                 dumpfile.write("POIN {}\n".format(label))
 
