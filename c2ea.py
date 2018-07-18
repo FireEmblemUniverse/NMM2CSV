@@ -192,15 +192,14 @@ def main():
     else: # not doSingleFile
         csvList = glob.glob(folder + '/**/*.csv', recursive = True)
         
-        for index, csvfile in enumerate(csvList):
+        for filename in csvList:
             rom = process(
-                csvfile,
-                csvfile.replace(".csv",".nmm"),
-                csvfile.replace(".csv",".event"),
+                filename,
+                filename.replace(".csv",".nmm"),
+                filename.replace(".csv",".event"),
                 rom
             )
         
-        installer = "Table Installer.event"
         addToInstaller(csvList, installer)
     
     if TABLE_INLINED:
