@@ -1,17 +1,26 @@
-def memoize(f):
-    cache = {}
-    def g(*args):
-        if args in cache:
-            return cache[args]
-        else:
-            res = f(*args)
-            cache[args] = res
-            return res
-    #Set the cache as a function attribute so we can access it later (say for serialization)
-    g.cache = cache
-    return g
+caches = {}
 
-@memoize
+def getOrSetNew(dicToCheck, key, newFunc):
+    if key not in dicToCheck:
+        dicToCheck[key] = newFunc()
+    return dicToCheck[key]
+
+def memoize(name = None):
+    def decorator(f):
+        global caches
+        # If we are given a valid name for the function, associate it with that entry in the cache.
+        if name is not None:
+            cache = getOrSetNew(caches, name, lambda: {})
+        else:
+            cache = {}
+        def g(*args):
+            return getOrSetNew(cache, args, lambda: f(*args))
+        # Set the cache as a function attribute so we can access it later (say for serialization)
+        g.cache = cache
+        return g
+    return decorator
+
+@memoize()
 def readRom(romFileName):
     words = []
     with open(romFileName, 'rb') as rom:
@@ -22,7 +31,7 @@ def readRom(romFileName):
             words.append(word)
     return words
 
-@memoize
+@memoize(name = 'pointerOffsets')
 def pointerOffsets(romFileName, value):
     return tuple(pointerIter(romFileName, value))
 
