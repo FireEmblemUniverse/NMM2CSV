@@ -1,5 +1,6 @@
 import nightmare, sys, csv, glob, os
-from c2eaPfinder import *
+
+TABLE_INLINED = False
 
 def showExceptionAndExit(exc_type, exc_value, tb):
     import traceback
@@ -33,6 +34,7 @@ def addToInstaller(csvList,installername):
 
 def process(inputCSV, index, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
+    global TABLE_INLINED
     inputNMM = inputCSV.replace(".csv",".nmm") #assume the same file name for now
     filename = inputCSV.replace(".csv",".event")
     nmm = nightmare.NightmareTable(inputNMM)
@@ -97,6 +99,8 @@ def process(inputCSV, index, rom):
         dumpfile.write(') "')
         dumpfile.write(macroOutput + '"\n\n') #e.g. BYTE arg000, WORD arg001, etc
         if tableOffset.strip()[0:6]=="INLINE":
+            from c2eaPfinder import pointerOffsets
+            TABLE_INLINED = True
             if rompath == None:
                 import tkinter as tk
                 root = tk.Tk()
@@ -141,8 +145,10 @@ def main():
         rom = process(csvfile, index, rom)
     installername = "Table Installer.event"
     addToInstaller(csvList,installername)
-    # If we ran successfully, save the pfinder cache.
-    writeCache()
+    if TABLE_INLINED:
+        # If we ran successfully and used pfinder, save the pfinder cache.
+        from c2eaPfinder import writeCache
+        writeCache()
     input("Press Enter to continue")
 
 if __name__ == '__main__':
