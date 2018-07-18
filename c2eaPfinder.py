@@ -21,26 +21,6 @@ def memoize(name = None):
         return g
     return decorator
 
-@memoize()
-def readRom(romFileName):
-    words = []
-    with open(romFileName, 'rb') as rom:
-        while True:
-            word = rom.read(4)
-            if word == b'':
-                break
-            words.append(struct.unpack('<I', word)[0]) #Use the raw data;
-            # <I is little-endian 32 bit unsigned integer
-    return words
-
-@memoize(name = 'pointerOffsets')
-def pointerOffsets(romFileName, value):
-    return tuple(pointerIter(romFileName, value))
-
-def pointerIter(romFileName, value):
-    words = readRom(romFileName)
-    return (i<<2 for i,x in enumerate(words) if x==value)
-
 def writeCache():
     import pickle
     with open("./.cache", 'wb') as f:
@@ -66,3 +46,23 @@ def deleteCache():
     for name in caches:
         caches[name] = {}
     writeCache()
+
+@memoize()
+def readRom(romFileName):
+    words = []
+    with open(romFileName, 'rb') as rom:
+        while True:
+            word = rom.read(4)
+            if word == b'':
+                break
+            words.append(struct.unpack('<I', word)[0]) #Use the raw data;
+            # <I is little-endian 32 bit unsigned integer
+    return words
+
+@memoize(name = 'pointerOffsets')
+def pointerOffsets(romFileName, value):
+    return tuple(pointerIter(romFileName, value))
+
+def pointerIter(romFileName, value):
+    words = readRom(romFileName)
+    return (i<<2 for i,x in enumerate(words) if x==value)
