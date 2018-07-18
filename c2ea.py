@@ -1,4 +1,5 @@
 import nightmare, sys, csv, glob, os
+from c2eaPfinder import *
 
 def show_exception_and_exit(exc_type, exc_value, tb):
     import traceback
@@ -29,41 +30,6 @@ def addToInstaller(csvList,installername):
         with open(installername,'a') as myfile:
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
-
-
-def memoize(f):
-    cache = {}
-    def g(*args):
-        if args in cache:
-            return cache[args]
-        else:
-            res = f(*args)
-            cache[args] = res
-            return res
-    #Set the cache as a function attribute so we can access it later (say for serialization)
-    g.cache = cache
-    return g
-
-@memoize
-def readRom(romFileName):
-    words = []
-    with open(romFileName, 'rb') as rom:
-        while True:
-            word = rom.read(4)
-            if word == b'':
-                break
-            words.append(word)
-    return words
-
-@memoize
-def pointer_offsets(romFileName, value):
-    return tuple(pointer_iter(romFileName, value))
-
-def pointer_iter(romFileName, value):
-    target = value.to_bytes(4, 'little')
-    words = readRom(romFileName)
-    return (i<<2 for i,x in enumerate(words) if x==target)
-
 
 def process(inputCSV, index, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
