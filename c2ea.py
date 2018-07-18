@@ -40,6 +40,8 @@ def memoize(f):
             res = f(*args)
             cache[args] = res
             return res
+    #Set the cache as a function attribute so we can access it later (say for serialization)
+    g.cache = cache
     return g
 
 @memoize
