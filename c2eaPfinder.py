@@ -1,3 +1,4 @@
+import struct
 caches = {}
 
 def getOrSetNew(dicToCheck, key, newFunc):
@@ -28,7 +29,8 @@ def readRom(romFileName):
             word = rom.read(4)
             if word == b'':
                 break
-            words.append(word)
+            words.append(struct.unpack('<I', word)[0]) #Use the raw data;
+            # <I is little-endian 32 bit unsigned integer
     return words
 
 @memoize(name = 'pointerOffsets')
@@ -36,6 +38,5 @@ def pointerOffsets(romFileName, value):
     return tuple(pointerIter(romFileName, value))
 
 def pointerIter(romFileName, value):
-    target = value.to_bytes(4, 'little')
     words = readRom(romFileName)
     return (i<<2 for i,x in enumerate(words) if x==target)
