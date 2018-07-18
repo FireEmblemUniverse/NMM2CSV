@@ -23,10 +23,10 @@ def readRom(romFileName):
     return words
 
 @memoize
-def pointer_offsets(romFileName, value):
-    return tuple(pointer_iter(romFileName, value))
+def pointerOffsets(romFileName, value):
+    return tuple(pointerIter(romFileName, value))
 
-def pointer_iter(romFileName, value):
+def pointerIter(romFileName, value):
     target = value.to_bytes(4, 'little')
     words = readRom(romFileName)
     return (i<<2 for i,x in enumerate(words) if x==target)

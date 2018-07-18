@@ -1,13 +1,13 @@
 import nightmare, sys, csv, glob, os
 from c2eaPfinder import *
 
-def show_exception_and_exit(exc_type, exc_value, tb):
+def showExceptionAndExit(exc_type, exc_value, tb):
     import traceback
     traceback.print_exception(exc_type, exc_value, tb)
     input("Press Enter key to exit.")
     sys.exit(-1)
 
-def getarglength(nmmentry):
+def getArgLength(nmmentry):
     """takes the nmm entry object and returns the appropriate EA marker"""
     if (nmmentry.length==4) & (nmmentry.offset%4==0):
         return "WORD "
@@ -48,7 +48,7 @@ def process(inputCSV, index, rom):
     for x in range(nmm.colNum):
         argx = "arg"+'{0:03d}'.format(x)
         macroArgs.append(argx) #arg000, arg001, arg002 etc up to 1000 columns.
-        arglen = getarglength(nmm.columns[x]) #this gets the appropriate length string.
+        arglen = getArgLength(nmm.columns[x]) #this gets the appropriate length string.
         if arglen!=currlen: #only append if needed else just add arg.
             if currlen!='': #this should only be on the first line
                 macroOutput+=';'
@@ -76,7 +76,7 @@ def process(inputCSV, index, rom):
                         input("Press Enter to quit.")
                         sys.exit(-1)
                 try:
-                    arglen = getarglength(entry)
+                    arglen = getArgLength(entry)
                     if (arglen=="WORD ")|(arglen=="SHORT "):
                         outputline += data + ','
                     else:
@@ -109,7 +109,7 @@ def process(inputCSV, index, rom):
 
             dumpfile.write("PUSH\n")
 
-            for offset in pointer_offsets(rompath, originalOffset | 0x8000000):
+            for offset in pointerOffsets(rompath, originalOffset | 0x8000000):
                 dumpfile.write("ORG ${:X}\n".format(offset))
                 dumpfile.write("POIN {}\n".format(label))
 
@@ -131,7 +131,7 @@ def process(inputCSV, index, rom):
 
 
 def main():
-    sys.excepthook = show_exception_and_exit
+    sys.excepthook = showExceptionAndExit
     try:
         rom = sys.argv[1]
     except IndexError:
