@@ -40,6 +40,8 @@ initialHash = None
 def loadCache():
     global cachesLoaded
     global initialHash
+    global caches
+    
     if not cachesLoaded:
         import os, pickle
         if os.path.exists("./.cache"):
@@ -61,6 +63,8 @@ def writeCache():
             pickle.dump(caches, f, pickle.HIGHEST_PROTOCOL)
 
 def deleteCache():
+    global caches
+    
     for name in caches:
         caches[name] = {}
     writeCache()
