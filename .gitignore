@@ -1,6 +1,11 @@
-# Compilation intermediaries and outputs
-*.spec
+# Should not be in repo
+*.gba
 *.exe
+*.csv
+*.nmm
+
+# Compilation intermediaries
+*.spec
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
