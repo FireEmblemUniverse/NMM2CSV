@@ -187,6 +187,12 @@ def main():
             sys.exit("ERROR: -nmm or -out argument specified without -csv, aborting.")
 
     if doSingleFile:
+        if not os.path.exists(csvFile):
+            sys.exit("ERROR: CSV File `{}` doesn't exist!".format(csvFile))
+        
+        if not os.path.exists(nmmFile):
+            sys.exit("ERROR: NMM File `{}` doesn't exist!".format(nmmFile))
+        
         process(csvFile, nmmFile, outFile, rom)
     
     else: # not doSingleFile
