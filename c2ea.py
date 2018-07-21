@@ -36,7 +36,7 @@ def process(inputCSV, inputNMM, filename, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
     global TABLE_INLINED
 
-    macroName = "_C2EA_{}".format(os.path.split(os.path.splitext(inputCSV)[0])[1].replace(os.path.sep, "_")).replace(' ', '_')
+    macroName = "_C2EA_{}".format(os.path.split(os.path.splitext(inputCSV)[0])[1].replace(' ', '_'))
 
     nmm = nightmare.NightmareTable(inputNMM)
     rompath = rom
