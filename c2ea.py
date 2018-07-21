@@ -27,7 +27,7 @@ def addToInstaller(csvList,installername):
         nmpath = csv.replace(".csv",".nmm")
         nmm = nightmare.NightmareTable(nmpath)
         filename = csv.replace(".csv",".event") #I don't wanna use .txt because it conflicts, but this is supposed to be a text file!
-        filename = filename.replace(os.getcwd()+'\\','')
+        filename = os.path.relpath(filename, os.path.dirname(installername)) # filename.replace(os.getcwd()+'\\','')
         with open(installername,'a') as myfile:
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
