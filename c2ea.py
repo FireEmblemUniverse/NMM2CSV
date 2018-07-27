@@ -151,21 +151,21 @@ def main():
     if len(sys.argv) > 1:
         import argparse
         
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description = 'Convert CSV file(s) to EA events using NMM file(s) are reference. Defaults to looking for CSVs in the current directory. You can specify a directory to look in using -folder, or you can switch to processing singles CSVs using -csv.')
         
         # Common arguments
-        parser.add_argument('rom', nargs='?')
+        parser.add_argument('rom', nargs='?', help = 'reference ROM (for pointer searching)')
         # parser.add_argument('-nocache') # sounds like no$ xd
         # parser.add_argument('-clearcache')
         
         # Arguments for single CSV processing
-        parser.add_argument('-nmm')
-        parser.add_argument('-csv')
-        parser.add_argument('-out')
+        parser.add_argument('-csv', help = 'CSV for single csv processing')
+        parser.add_argument('-nmm', help = '(use with -csv) reference NMM (default: [CSVFile]:.csv=.nmm)')
+        parser.add_argument('-out', help = '(use with -csv) output event (default: [CSVFile]:.csv=.event)')
 
         # Arguments for folder processing
-        parser.add_argument('-folder')
-        parser.add_argument('-installer')
+        parser.add_argument('-folder', help = 'folder to look for csvs in')
+        parser.add_argument('-installer', help = 'output installer event (default: [Folder]/Table Installer.event)')
         
         args = parser.parse_args()
         
