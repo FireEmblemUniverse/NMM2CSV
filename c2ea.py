@@ -27,16 +27,17 @@ def addToInstaller(csvList,installername):
         nmpath = csv.replace(".csv",".nmm")
         nmm = nightmare.NightmareTable(nmpath)
         filename = csv.replace(".csv",".event") #I don't wanna use .txt because it conflicts, but this is supposed to be a text file!
-        filename = filename.replace(os.getcwd()+'\\','')
+        filename = os.path.relpath(filename, os.path.dirname(installername)) # filename.replace(os.getcwd()+'\\','')
         with open(installername,'a') as myfile:
             #myfile.write("ORG " + hex(nmm.offset) + '\n') Don't put the offset here, have it in the dmp.
             myfile.write('#include "' + filename + '"\n\n')
 
-def process(inputCSV, index, rom):
+def process(inputCSV, inputNMM, filename, rom):
     """Takes a csv and spits out an EA macro file (.event, but actually text). Requires a nmm with the same name in the same folder.""" #is it possible to tell if it's inline?
     global TABLE_INLINED
-    inputNMM = inputCSV.replace(".csv",".nmm") #assume the same file name for now
-    filename = inputCSV.replace(".csv",".event")
+
+    macroName = "_C2EA_{}".format(os.path.split(os.path.splitext(inputCSV)[0])[1].replace(' ', '_'))
+
     nmm = nightmare.NightmareTable(inputNMM)
     rompath = rom
     macroArgs = [] #params for macro
@@ -64,7 +65,7 @@ def process(inputCSV, index, rom):
         table = csv.reader(myfile)
         tableOffset = next(table)[0]
         for row in table:
-            outputline = "csvmacro" + '{0:03d}'.format(index) + "("
+            outputline = "{}(".format(macroName)
             items = zip(nmm.columns, row[1:])
             for entry, data in items:
                 thisentry = ''
@@ -93,8 +94,7 @@ def process(inputCSV, index, rom):
 
     with open(filename, 'w') as dumpfile:
         inline = False
-        #dumpfile.write('{\n#define csvmacro(')
-        dumpfile.write("#define csvmacro" + '{0:03d}'.format(index) + "(")
+        dumpfile.write("#define {}(".format(macroName))
         dumpfile.write(','.join(macroArgs)) #turns list into 'arg000,arg001' etc
         dumpfile.write(') "')
         dumpfile.write(macroOutput + '"\n\n') #e.g. BYTE arg000, WORD arg001, etc
@@ -136,19 +136,87 @@ def process(inputCSV, index, rom):
 
 def main():
     sys.excepthook = showExceptionAndExit
-    try:
-        rom = sys.argv[1]
-    except IndexError:
-        rom = None
-    csvList = glob.glob(os.getcwd() + '/**/*.csv',recursive=True)
-    for index, csvfile in enumerate(csvList):
-        rom = process(csvfile, index, rom)
-    installername = "Table Installer.event"
-    addToInstaller(csvList,installername)
+    
+    doSingleFile = False
+
+    folder    = os.getcwd()
+    installer = "Table Installer.event"
+    
+    rom       = None
+    
+    csvFile   = None
+    nmmFile   = None
+    outFile   = None
+
+    if len(sys.argv) > 1:
+        import argparse
+        
+        parser = argparse.ArgumentParser(description = 'Convert CSV file(s) to EA events using NMM file(s) are reference. Defaults to looking for CSVs in the current directory. You can specify a directory to look in using -folder, or you can switch to processing singles CSVs using -csv.')
+        
+        # Common arguments
+        parser.add_argument('rom', nargs='?', help = 'reference ROM (for pointer searching)')
+        # parser.add_argument('-nocache') # sounds like no$ xd
+        # parser.add_argument('-clearcache')
+        
+        # Arguments for single CSV processing
+        parser.add_argument('-csv', help = 'CSV for single csv processing')
+        parser.add_argument('-nmm', help = '(use with -csv) reference NMM (default: [CSVFile]:.csv=.nmm)')
+        parser.add_argument('-out', help = '(use with -csv) output event (default: [CSVFile]:.csv=.event)')
+
+        # Arguments for folder processing
+        parser.add_argument('-folder', help = 'folder to look for csvs in')
+        parser.add_argument('-installer', help = 'output installer event (default: [Folder]/Table Installer.event)')
+        
+        args = parser.parse_args()
+        
+        rom = args.rom
+        
+        if args.csv != None:
+            if (args.folder != None) or (args.installer != None):
+                sys.exit("ERROR: -folder or -installer argument specified with -csv, aborting.")
+            
+            doSingleFile = True
+            
+            csvFile = args.csv
+            nmmFile = args.nmm if args.nmm != None else csvFile.replace(".csv", ".nmm")
+            outFile = args.out if args.out != None else csvFile.replace(".csv", ".event")
+        
+        else:
+            if (args.nmm != None) or (args.out != None):
+                sys.exit("ERROR: -nmm or -out argument specified without -csv, aborting.")
+            
+            if args.folder != None:
+                folder = args.folder
+            
+            installer = args.installer if args.installer != None else (folder + '/Table Installer.event')
+
+    if doSingleFile:
+        if not os.path.exists(csvFile):
+            sys.exit("ERROR: CSV File `{}` doesn't exist!".format(csvFile))
+        
+        if not os.path.exists(nmmFile):
+            sys.exit("ERROR: NMM File `{}` doesn't exist!".format(nmmFile))
+        
+        process(csvFile, nmmFile, outFile, rom)
+    
+    else: # not doSingleFile
+        csvList = glob.glob(folder + '/**/*.csv', recursive = True)
+        
+        for filename in csvList:
+            rom = process(
+                filename,
+                filename.replace(".csv",".nmm"),
+                filename.replace(".csv",".event"),
+                rom
+            )
+        
+        addToInstaller(csvList, installer)
+    
     if TABLE_INLINED:
         # If we ran successfully and used pfinder, save the pfinder cache.
         from c2eaPfinder import writeCache
         writeCache()
+    
     input("Press Enter to continue")
 
 if __name__ == '__main__':
