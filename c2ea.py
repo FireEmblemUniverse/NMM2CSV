@@ -171,20 +171,24 @@ def main():
         
         rom = args.rom
         
-        if args.folder != None:
-            folder = args.folder
-            
-        installer = args.installer if args.installer != None else (folder + '/Table Installer.event')
-        
         if args.csv != None:
+            if (args.folder != None) or (args.installer != None):
+                sys.exit("ERROR: -folder or -installer argument specified with -csv, aborting.")
+            
             doSingleFile = True
             
             csvFile = args.csv
             nmmFile = args.nmm if args.nmm != None else csvFile.replace(".csv", ".nmm")
             outFile = args.out if args.out != None else csvFile.replace(".csv", ".event")
         
-        elif (args.nmm != None) or (args.out != None):
-            sys.exit("ERROR: -nmm or -out argument specified without -csv, aborting.")
+        else:
+            if (args.nmm != None) or (args.out != None):
+                sys.exit("ERROR: -nmm or -out argument specified without -csv, aborting.")
+            
+            if args.folder != None:
+                folder = args.folder
+            
+            installer = args.installer if args.installer != None else (folder + '/Table Installer.event')
 
     if doSingleFile:
         if not os.path.exists(csvFile):
