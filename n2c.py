@@ -1,10 +1,18 @@
-import nightmare, csv, sys, glob, os
+import nightmare, csv, sys, glob, os, re
 
 def showExceptionAndExit(exc_type, exc_value, tb):
     import traceback
     traceback.print_exception(exc_type, exc_value, tb)
     input("Press Enter key to exit.")
     sys.exit(-1)
+
+def genIdentifierEntries(names):
+    """
+    Filters entry list of an nmm to contain names suitable for EA/C identifiers.
+    """
+    
+    for name in names:
+        yield re.sub(r'\W+', '', name)
 
 def process(nmm, rom, outFile):
     # First cell is offset of table in ROM
@@ -23,6 +31,9 @@ def process(nmm, rom, outFile):
         # First cell is row/entry name
         try:
             thisRow = [nmm.entryNames[row]]
+            
+            if thisRow[0] == "":
+                thisRow[0] = hex(row)
         
         except IndexError:
             thisRow = [hex(row)]
@@ -84,6 +95,9 @@ def main():
 
         try:
             nmm = nightmare.NightmareTable(nmmFile)
+            
+            nmm.entryNames = [x for x in genIdentifierEntries(nmm.entryNames)]
+            
             process(nmm, romBytes, csvFile)
         
         except AssertionError as e:
