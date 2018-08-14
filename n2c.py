@@ -11,6 +11,8 @@ def genIdentifierEntries(names):
     Filters entry list of an nmm to contain names suitable for EA/C identifiers.
     """
     
+    # dict mapping names to how many times they've come up
+    # this is used to prevent duplicate names
     repeatDict = {}
 
     for name in names:
@@ -18,12 +20,15 @@ def genIdentifierEntries(names):
         
         if newName != "":
             if newName in repeatDict:
+                # if name in repeat dict, rename name to "[name][count]", and increment count
+
                 count = repeatDict[newName] + 1
                 repeatDict[newName] = count
                 
                 newName = "{}{}".format(newName, count)
             
             else:
+                # add name to dict
                 repeatDict[newName] = 1
         
         yield newName
@@ -67,12 +72,15 @@ def genTableRows(nmm, rom):
         yield thisRow
 
 def getDefineEntryDefinition(name, value):
+    # "#define Name Index"
     return "#define {} 0x{:X}\n".format(name, value)
 
 def getAssignEntryDefinition(name, value):
+    # "Name = Index"
     return "{} = 0x{:X}\n".format(name, value)
 
 def getEnumEntryDefinition(name, value):
+    # "    Name = Index,"
     return "    {} = 0x{:X},\n".format(name, value)
 
 def genEntryDefinitions(nmm, getEntryDefinition):
@@ -81,20 +89,14 @@ def genEntryDefinitions(nmm, getEntryDefinition):
             name = nmm.entryNames[i]
         
         except IndexError:
+            # We reached end of names entries
             break
         
         if name == "":
+            # Name is empty
             continue
         
         yield getEntryDefinition(name, i)
-
-def process(nmm, rom, outFile):
-    # Write table as csv
-    with open(outFile, 'w') as f:
-        wr = csv.writer(f, quoting = csv.QUOTE_ALL, lineterminator = '\n')
-        wr.writerows(genTableRows(nmm, rom))
-
-    print("Wrote to " + outFile)
 
 def main():
     import argparse
@@ -148,29 +150,39 @@ def main():
 
         try:
             nmm = nightmare.NightmareTable(nmmFile)
-            
-            if enableGenerateEntryLists:
-                nmm.entryNames = [x for x in genIdentifierEntries(nmm.entryNames)]
                 
-                entryFile = nmmFile.replace('.nmm', '.def')
-                
-                with open(entryFile, 'w') as f:
-                    if args.enums:
-                        f.write('enum {\n')
-                        f.writelines(genEntryDefinitions(nmm, getEnumEntryDefinition))
-                        f.write('};\n')
-                    
-                    elif args.defines:
-                        f.writelines(genEntryDefinitions(nmm, getDefineEntryDefinition))
-                        
-                    elif args.assigns:
-                        f.writelines(genEntryDefinitions(nmm, getAssignEntryDefinition))
-            
-            process(nmm, romBytes, csvFile)
-        
         except AssertionError as e:
             # NMM is malformed
-            print("Error in " + nmmFile + ":\n" + str(e))
+            print("Couldn't parse NMM `{}`:\n  {}".format(nmmFile, str(e)))
+            continue
+
+        if enableGenerateEntryLists:
+            # Regen entry names to make them suitable as C/EA identifers
+            nmm.entryNames = [x for x in genIdentifierEntries(nmm.entryNames)]
+            
+            entryFile = nmmFile.replace('.nmm', '.def')
+            
+            # Write entry list file
+            with open(entryFile, 'w') as f:
+                if args.enums:
+                    f.write('enum {\n')
+                    f.writelines(genEntryDefinitions(nmm, getEnumEntryDefinition))
+                    f.write('};\n')
+                
+                elif args.defines:
+                    f.writelines(genEntryDefinitions(nmm, getDefineEntryDefinition))
+                    
+                elif args.assigns:
+                    f.writelines(genEntryDefinitions(nmm, getAssignEntryDefinition))
+                
+                print("Wrote to `{}`".format(entryFile))
+        
+        # Write CSV
+        with open(csvFile, 'w') as f:
+            wr = csv.writer(f, quoting = csv.QUOTE_ALL, lineterminator = '\n')
+            wr.writerows(genTableRows(nmm, romBytes))
+
+            print("Wrote to `{}`".format(csvFile))
 
     input("Press Enter to continue.")
 
