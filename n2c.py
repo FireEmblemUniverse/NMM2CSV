@@ -11,8 +11,22 @@ def genIdentifierEntries(names):
     Filters entry list of an nmm to contain names suitable for EA/C identifiers.
     """
     
+    repeatDict = {}
+
     for name in names:
-        yield re.sub(r'\W+', '', name)
+        newName = re.sub(r'\W+', '', name)
+        
+        if newName != "":
+            if newName in repeatDict:
+                count = repeatDict[newName] + 1
+                repeatDict[newName] = count
+                
+                newName = "{}{}".format(newName, count)
+            
+            else:
+                repeatDict[newName] = 1
+        
+        yield newName
 
 def genTableRows(nmm, rom):
     # First cell is offset of table in ROM
@@ -52,6 +66,28 @@ def genTableRows(nmm, rom):
         
         yield thisRow
 
+def getDefineEntryDefinition(name, value):
+    return "#define {} 0x{:X}\n".format(name, value)
+
+def getAssignEntryDefinition(name, value):
+    return "{} = 0x{:X}\n".format(name, value)
+
+def getEnumEntryDefinition(name, value):
+    return "    {} = 0x{:X},\n".format(name, value)
+
+def genEntryDefinitions(nmm, getEntryDefinition):
+    for i in range(nmm.rowNum):
+        try:
+            name = nmm.entryNames[i]
+        
+        except IndexError:
+            break
+        
+        if name == "":
+            continue
+        
+        yield getEntryDefinition(name, i)
+
 def process(nmm, rom, outFile):
     # Write table as csv
     with open(outFile, 'w') as f:
@@ -61,19 +97,31 @@ def process(nmm, rom, outFile):
     print("Wrote to " + outFile)
 
 def main():
+    import argparse
+
     sys.excepthook = showExceptionAndExit
 
-    try:
-        romFile = sys.argv[1]
-
-    except IndexError:
+    parser = argparse.ArgumentParser(description = 'Convert NMM files to CSV files using a ROM as reference.')
+    
+    # Input options
+    parser.add_argument('rom', nargs='?', help = 'reference ROM.')
+    parser.add_argument('-f', '--folder', help = 'folder to search for NMMs in.')
+    
+    # Entry List output options
+    parser.add_argument('-e', '--enums', action = 'store_true', help = 'translates entry lists to C enums.')
+    parser.add_argument('-d', '--defines', action = 'store_true', help = 'translates entry lists to defines.')
+    parser.add_argument('-a', '--assigns', action = 'store_true', help = 'translates entry lists to `name = id` expressions.')
+    
+    args = parser.parse_args()
+    
+    if args.rom == None:
         import tkinter as tk
         from tkinter import filedialog
 
         root = tk.Tk()
         root.withdraw()
 
-        romFile = filedialog.askopenfilename(
+        args.rom = filedialog.askopenfilename(
             title = "Select ROM to rip data from",
             initialdir = os.getcwd(),
             filetypes = [
@@ -82,13 +130,17 @@ def main():
             ]
         )
 
-    (dirname, filename) = os.path.split(romFile)
-    
     # generating module list
-    moduleList = glob.glob('**/*.nmm', recursive=True)
-
+    if args.folder == None:
+        moduleList = glob.glob('**/*.nmm', recursive = True)
+    
+    else:
+        moduleList = glob.glob(args.folder + '/**/*.nmm', recursive = True)
+    
+    enableGenerateEntryLists = args.enums or args.defines or args.assigns
+    
     # read ROM bytes
-    with open(romFile, 'rb') as f:
+    with open(args.rom, 'rb') as f:
         romBytes = bytes(f.read())
     
     for nmmFile in moduleList:
@@ -97,7 +149,22 @@ def main():
         try:
             nmm = nightmare.NightmareTable(nmmFile)
             
-            nmm.entryNames = [x for x in genIdentifierEntries(nmm.entryNames)]
+            if enableGenerateEntryLists:
+                nmm.entryNames = [x for x in genIdentifierEntries(nmm.entryNames)]
+                
+                entryFile = nmmFile.replace('.nmm', '.def')
+                
+                with open(entryFile, 'w') as f:
+                    if args.enums:
+                        f.write('enum {\n')
+                        f.writelines(genEntryDefinitions(nmm, getEnumEntryDefinition))
+                        f.write('};\n')
+                    
+                    elif args.defines:
+                        f.writelines(genEntryDefinitions(nmm, getDefineEntryDefinition))
+                        
+                    elif args.assigns:
+                        f.writelines(genEntryDefinitions(nmm, getAssignEntryDefinition))
             
             process(nmm, romBytes, csvFile)
         
