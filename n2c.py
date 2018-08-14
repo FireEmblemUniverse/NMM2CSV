@@ -14,7 +14,7 @@ def genIdentifierEntries(names):
     for name in names:
         yield re.sub(r'\W+', '', name)
 
-def process(nmm, rom, outFile):
+def genTableRows(nmm, rom):
     # First cell is offset of table in ROM
     headers = [hex(nmm.offset)]
     
@@ -22,7 +22,7 @@ def process(nmm, rom, outFile):
     for col in nmm.columns:
         headers.append(col.description)
     
-    table = [headers]
+    yield headers
 
     for row in range(nmm.rowNum):
         # rowOffset is the offset in ROM of the row data
@@ -50,12 +50,13 @@ def process(nmm, rom, outFile):
             
             thisRow.append(dt)
         
-        table.append(thisRow)
-    
+        yield thisRow
+
+def process(nmm, rom, outFile):
     # Write table as csv
-    with open(outFile, 'w') as myfile:
-        wr = csv.writer(myfile, quoting = csv.QUOTE_ALL, lineterminator = '\n')
-        wr.writerows(table)
+    with open(outFile, 'w') as f:
+        wr = csv.writer(f, quoting = csv.QUOTE_ALL, lineterminator = '\n')
+        wr.writerows(genTableRows(nmm, rom))
 
     print("Wrote to " + outFile)
 
