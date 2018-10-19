@@ -9,7 +9,7 @@ def showExceptionAndExit(exc_type, exc_value, tb):
     traceback.print_exception(exc_type, exc_value, tb)
     sys.exit(-1)
 
-def generateInstaller(installerName, csvList, includeTableDefinitions):
+def generateInstaller(installerName, eventList, includeTableDefinitions):
     """
     Takes a list of csv files and adds them to the EA installer
     """
@@ -20,15 +20,20 @@ def generateInstaller(installerName, csvList, includeTableDefinitions):
         if includeTableDefinitions:
             file.write('#include "Table Definitions.txt"\n\n')
 
-        for csv in csvList:
-            # get event file name from csv name (TODO: pass the event file list directly?)
-            filename = csv.replace(".csv", ".event")
-
+        for fileName in eventList:
             # get relative path to event from the installer directory
-            filename = os.path.relpath(filename, os.path.dirname(installerName))
+            fileName = os.path.relpath(fileName, os.path.dirname(installerName))
 
             # write include directive
-            file.write('#include "{}"\n\n'.format(filename))
+            file.write('#include "{}"\n\n'.format(fileName))
+
+def swapFileExtension(fileName, extTo):
+    """
+    Returns file name with extention swapped for the one given
+    ex: swapFileExtension("file.csv", "event") returns "file.event".
+    """
+
+    return os.path.splitext(fileName)[0]+'.{}'.format(extTo)
 
 class BadCellError(Exception):
     def __init__(self, csv, row, col, desc):
@@ -295,8 +300,8 @@ def main():
             doSingleFile = True
 
             csvFile = args.csv
-            nmmFile = args.nmm if args.nmm != None else csvFile.replace(".csv", ".nmm")
-            outFile = args.out if args.out != None else csvFile.replace(".csv", ".event")
+            nmmFile = args.nmm if args.nmm != None else swapFileExtension(csvFile, "nmm")
+            outFile = args.out if args.out != None else swapFileExtension(csvFile, "event")
 
         else:
             if (args.nmm != None) or (args.out != None):
@@ -329,15 +334,19 @@ def main():
             for filename in csvList:
                 rom = process(
                     filename,
-                    filename.replace(".csv", ".nmm"),
-                    filename.replace(".csv", ".event"),
+                    swapFileExtension(filename, "nmm"),
+                    swapFileExtension(filename, "event"),
                     rom
                 )
 
                 if not quiet:
-                    print("Wrote to {}".format(filename.replace(".csv", ".event")))
+                    print("Wrote to {}".format(swapFileExtension(filename, "event")))
 
-            generateInstaller(installer, csvList, not noTableDefinitions)
+            generateInstaller(
+                installer,
+                map(lambda csv: swapFileExtension(csv, "event"), csvList),
+                not noTableDefinitions
+            )
 
     except BadCellError as e:
         sys.exit("ERROR: in csv `{}`, row {}, column {}:\n  {}".format(
