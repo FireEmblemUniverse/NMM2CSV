@@ -29,7 +29,7 @@ def generateInstaller(installerName, eventList, includeTableDefinitions):
 
 def swapFileExtension(fileName, extTo):
     """
-    Returns file name with extention swapped for the one given
+    Returns file name with extension swapped for the one given
     ex: swapFileExtension("file.csv", "event") returns "file.event".
     """
 
