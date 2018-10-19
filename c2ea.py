@@ -33,7 +33,7 @@ def swapFileExtension(fileName, extTo):
     ex: swapFileExtension("file.csv", "event") returns "file.event".
     """
 
-    return os.path.splitext(fileName)[0]+'.{}'.format(extTo)
+    return '{}.{}'.format(os.path.splitext(fileName)[0], extTo)
 
 class BadCellError(Exception):
     def __init__(self, csv, row, col, desc):
