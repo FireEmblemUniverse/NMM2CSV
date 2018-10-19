@@ -1,4 +1,4 @@
-import sys, csv, os, re
+import sys, os, re
 import nightmare, csv, glob
 
 TABLE_INLINED = False
