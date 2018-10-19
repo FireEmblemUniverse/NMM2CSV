@@ -173,8 +173,12 @@ def process(inputCSV, inputNMM, filename, rom):
                 # If it is a "standard" entry type, we can allow complex expressions and what not
                 if entry.length == getCodeLengthFromNmmEntry(entry):
                     try:
-                        intValue = int(cell, base = 0) & ((1 << 8*entry.length)-1)
-                        cellEntry = intToEALiteral(intValue)
+                        intValue = int(cell, base = 0)
+
+                        if (not entry.signed) and intValue < 0:
+                            raise BadCellError(inputCSV, rowIndex+2, entryIndex+2, "Cell contains signed number, but corresponding NMM entry is unsigned!")
+
+                        cellEntry = intToEALiteral(intValue & ((1 << 8*entry.length)-1))
 
                     except ValueError:
                         cellEntry = '({})'.format(cell)
